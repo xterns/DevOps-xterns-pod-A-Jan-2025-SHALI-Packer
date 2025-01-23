@@ -26,6 +26,10 @@ jobs:
           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
           sudo apt-get update && sudo apt-get install packer
 
+      - name: Initialize Packer (packer init)
+        run: |
+          packer init .
+          
       - name: Build AMI with Packer
         run: |
           packer build create-packer.pkr.hcl
