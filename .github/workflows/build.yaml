@@ -3,7 +3,7 @@ name: Packer Build AWS AMI
 on:
   push:
     branches:
-      - packer  # Trigger on push to main branch
+      - main  # Trigger on push to main branch
 
 jobs:
   build:
@@ -29,7 +29,7 @@ jobs:
       - name: Initialize Packer (packer init)
         run: |
           packer init .
-          
+
       - name: Build AMI with Packer
         run: |
           packer build create-packer.pkr.hcl
