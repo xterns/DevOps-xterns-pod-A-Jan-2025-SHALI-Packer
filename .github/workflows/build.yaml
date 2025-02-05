@@ -31,6 +31,9 @@ jobs:
           sudo apt-get update && sudo apt-get install packer -y
           packer --version
 
+      - name: Packer init
+        run: packer init .
+
       - name: Validate Packer template
         run: packer validate create-packer.pkr.hcl
 
