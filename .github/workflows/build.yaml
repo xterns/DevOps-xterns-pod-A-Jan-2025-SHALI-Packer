@@ -43,10 +43,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
         run: |
-          AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}')
+          AMI_ID=$(packer build -machine-readable . )
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
           echo "Built AMI: $AMI_ID"
-
+     # AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}')
       - name: Tag AMI
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
