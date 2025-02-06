@@ -69,10 +69,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Print AMI ID
-        run: |
-          echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
-
       - name: Deploy AMI to Test Environment
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
