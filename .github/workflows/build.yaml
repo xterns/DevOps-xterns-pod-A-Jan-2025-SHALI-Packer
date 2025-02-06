@@ -19,6 +19,8 @@ jobs:
   build-ami:
     if: github.event.pull_request.merged == true || github.event_name == 'push'
     runs-on: ubuntu-latest
+    outputs:
+      ami_id: ${{ steps.capture-ami.outputs.ami_id }}  # ✅ Pass AMI ID as output
 
     steps:
       - name: Checkout repository
@@ -44,8 +46,9 @@ jobs:
           AWS_REGION: us-east-1
         run: |
           AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}' | awk -F: '{print $NF}' )
+          echo "AMI_ID=$AMI_ID"
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
-          echo "Built AMI: $AMI_ID"
+          echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT  # ✅ Set AMI ID as output
      
       - name: Tag AMI
         env:
@@ -65,13 +68,25 @@ jobs:
   deploy-test:
     needs: build-ami
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: us-east-1
-
+    
     steps:
+      - name: Print AMI ID
+        run: echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
+
+
       - name: Launch EC2 Instance in Test Environment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+          AMI_ID: ${{ needs.build-ami.outputs.ami_id }} 
+
+        run: |
+          if [ -z "$AMI_ID" ]; then
+            echo "Error: AMI_ID is empty!"
+            exit 1
+          fi
+
         run: |
           echo "AMI ID is $AMI_ID"
           INSTANCE_ID=$(aws ec2 run-instances \
