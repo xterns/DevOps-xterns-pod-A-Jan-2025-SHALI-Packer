@@ -99,9 +99,11 @@ jobs:
             --subnet-id subnet-0a7f0aad8b71afcbf \
             --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestInstance},{Key=Environment,Value=testing}]' \
             --query 'Instances[0].InstanceId' --output text)
-
+            
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-          echo "Deployed Test Instance: $INSTANCE_ID"
+          #echo "Deployed Test Instance: $INSTANCE_ID"
+          echo "INSTANCE ID $INSTANCE_ID"     
+          
 
       - name: Wait for Instance to be Running
         run: |
