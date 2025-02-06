@@ -17,7 +17,6 @@ on:
 
 jobs:
   build-ami:
-    if: github.event.pull_request.merged == true || github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       ami_id: ${{ steps.capture-ami.outputs.ami_id }}  # ✅ Pass AMI ID as output
@@ -33,23 +32,24 @@ jobs:
           sudo apt-get update && sudo apt-get install packer -y
           packer --version
 
-      - name: Packer init
+      - name: Initialize Packer
         run: packer init .
 
       - name: Validate Packer template
         run: packer validate .
 
       - name: Build AMI with Packer
+        id: build
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
         run: |
-          AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}' | awk -F: '{print $NF}' )
+          AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}' | awk -F: '{print $NF}')
           echo "AMI_ID=$AMI_ID"
           echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
           echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT  # ✅ Set AMI ID as output
-     
+
       - name: Tag AMI
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -59,36 +59,34 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             TAG="production"
           else
-            TAG="testing"
+            TAG="test"
           fi
-
-          aws ec2 create-tags --resources $AMI_ID --tags Key=Environment,Value=$TAG
+          aws ec2 create-tags --resources "$AMI_ID" --tags Key=Environment,Value=$TAG
           echo "Tagged AMI $AMI_ID with '$TAG'"
 
   deploy-test:
-    needs: build-ami
+    needs: build-ami  # ✅ Waits for build-ami to finish
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Print AMI ID
-        run: |
-          echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }} "
+        run: echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
 
-
-      - name: Launch EC2 Instance in Test Environment
+      - name: Deploy AMI to Test Environment
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
-          AMI_ID: ${{ needs.build-ami.outputs.ami_id }} 
-
+          AMI_ID: ${{ needs.build-ami.outputs.ami_id }}  # ✅ Use AMI ID from build job
         run: |
           if [ -z "$AMI_ID" ]; then
             echo "Error: AMI_ID is empty!"
             exit 1
           fi
 
-       # run: |
+          echo "Deploying AMI: $AMI_ID to test environment"
+         
+       run: |
           echo "AMI ID is $AMI_ID"
           INSTANCE_ID=$(aws ec2 run-instances \
             --image-id $AMI_ID \
