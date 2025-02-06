@@ -70,11 +70,13 @@ jobs:
 
     steps:
       - name: Deploy AMI to Test Environment
+        id: deploy
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
           AMI_ID: ${{ needs.build-ami.outputs.ami_id }}  # ✅ Use AMI ID from build job
+
         run: |
           if [ -z "$AMI_ID" ]; then
             echo "Error: AMI_ID is empty!"
@@ -82,8 +84,9 @@ jobs:
           fi
 
           echo "Deploying AMI: $AMI_ID to test environment"
-         
-       run: |
+          
+      - name: Create EC2 instance with test AMI   
+        run: |
           echo "AMI ID is $AMI_ID"
           INSTANCE_ID=$(aws ec2 run-instances \
             --image-id $AMI_ID \
