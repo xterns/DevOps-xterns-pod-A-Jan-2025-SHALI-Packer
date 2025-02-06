@@ -70,7 +70,8 @@ jobs:
 
     steps:
       - name: Print AMI ID
-        run: echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
+        run: |
+          echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
 
       - name: Deploy AMI to Test Environment
         env:
