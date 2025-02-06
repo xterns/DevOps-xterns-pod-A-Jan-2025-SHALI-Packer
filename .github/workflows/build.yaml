@@ -73,6 +73,7 @@ jobs:
     steps:
       - name: Launch EC2 Instance in Test Environment
         run: |
+          echo "AMI ID is $AMI_ID"
           INSTANCE_ID=$(aws ec2 run-instances \
             --image-id $AMI_ID \
             --count 1 \
