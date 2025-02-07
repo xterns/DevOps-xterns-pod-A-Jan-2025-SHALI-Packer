@@ -82,6 +82,7 @@ jobs:
       - name: Debug AMI ID in Deploy
         run: |
           echo "AMI ID in deploy-test: $AMI_ID"
+          echo "{{ env.AMI_ID }}"
 
     #  - name: Print AMI ID
      #   run: |
