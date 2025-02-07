@@ -74,8 +74,8 @@ jobs:
     needs: build-ami  # ✅ Waits for build-ami to finish
     runs-on: ubuntu-latest
 
-    env:
-      AMI_ID: ${{ needs.build-ami.outputs.ami_id }}
+    #env:
+    #  AMI_ID: ${{ needs.build-ami.outputs.ami_id }}
 
     steps:
 
