@@ -126,22 +126,22 @@ jobs:
         run: |
           echo "AMI ID is $(cat ami_id.txt)"
           
-      #     INSTANCE_ID=$(aws ec2 run-instances \
-      #       --image-id $AMI_ID \
-      #       --count 1 \
-      #       --instance-type t2.micro \
-      #       --key-name packer \
-      #       --security-group-ids sg-01e53755fe2685f05 \
-      #       --subnet-id subnet-0a7f0aad8b71afcbf \
-      #       --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestInstance},{Key=Environment,Value=testing}]' \
-      #       --query 'Instances[0].InstanceId' --output text)
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id $(cat ami_id.txt) \
+            --count 1 \
+            --instance-type t2.micro \
+            --key-name packer \
+            --security-group-ids sg-01e53755fe2685f05 \
+            --subnet-id subnet-0a7f0aad8b71afcbf \
+            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestInstance},{Key=Environment,Value=testing}]' \
+            --query 'Instances[0].InstanceId' --output text)
             
-      #     echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-      #     #echo "Deployed Test Instance: $INSTANCE_ID"
-      #     echo "INSTANCE ID $INSTANCE_ID"     
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          #echo "Deployed Test Instance: $INSTANCE_ID"
+          echo "INSTANCE ID $INSTANCE_ID"     
           
 
-      # - name: Wait for Instance to be Running
-      #   run: |
-      #     aws ec2 wait instance-running --instance-ids $INSTANCE_ID
-      #     echo "Instance $INSTANCE_ID is now running."
+      - name: Wait for Instance to be Running
+        run: |
+          aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+          echo "Instance $INSTANCE_ID is now running."
