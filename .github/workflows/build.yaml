@@ -105,41 +105,41 @@ jobs:
      #   run: |
       #    echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
 
-      # - name: Deploy AMI to Test Environment
-      #   id: deploy
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_REGION: us-east-1
-      #     AMI_ID: ${{ needs.build-ami.outputs.ami_id }}  # ✅ Use AMI ID from build job
+      - name: Deploy AMI to Test Environment
+        id: deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+          #AMI_ID: ${{ needs.build-ami.outputs.ami_id }}  # ✅ Use AMI ID from build job
 
-      #   run: |
-      #     if [ -z "$AMI_ID" ]; then
-      #       echo "Error: AMI_ID is empty!"
-      #       exit 1
-      #     fi
+        run: |
+          if [ -z "$AMI_ID" ]; then
+            echo "Error: AMI_ID is empty!"
+            exit 1
+          fi
 
-      #     echo "Deploying AMI: $AMI_ID to test environment"
+          echo "Deploying AMI: $AMI_ID to test environment"
 
-      # - name: Create EC2 instance with test AMI   
-      #   run: |
-      #     echo "AMI ID is $AMI_ID"
-      #     INSTANCE_ID=$(aws ec2 run-instances \
-      #       --image-id $AMI_ID \
-      #       --count 1 \
-      #       --instance-type t2.micro \
-      #       --key-name packer \
-      #       --security-group-ids sg-01e53755fe2685f05 \
-      #       --subnet-id subnet-0a7f0aad8b71afcbf \
-      #       --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestInstance},{Key=Environment,Value=testing}]' \
-      #       --query 'Instances[0].InstanceId' --output text)
+      - name: Create EC2 instance with test AMI   
+        run: |
+          echo "AMI ID is $AMI_ID"
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id $AMI_ID \
+            --count 1 \
+            --instance-type t2.micro \
+            --key-name packer \
+            --security-group-ids sg-01e53755fe2685f05 \
+            --subnet-id subnet-0a7f0aad8b71afcbf \
+            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestInstance},{Key=Environment,Value=testing}]' \
+            --query 'Instances[0].InstanceId' --output text)
             
-      #     echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-      #     #echo "Deployed Test Instance: $INSTANCE_ID"
-      #     echo "INSTANCE ID $INSTANCE_ID"     
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          #echo "Deployed Test Instance: $INSTANCE_ID"
+          echo "INSTANCE ID $INSTANCE_ID"     
           
 
-      # - name: Wait for Instance to be Running
-      #   run: |
-      #     aws ec2 wait instance-running --instance-ids $INSTANCE_ID
-      #     echo "Instance $INSTANCE_ID is now running."
+      - name: Wait for Instance to be Running
+        run: |
+          aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+          echo "Instance $INSTANCE_ID is now running."
