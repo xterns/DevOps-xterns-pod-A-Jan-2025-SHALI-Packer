@@ -46,8 +46,8 @@ jobs:
           AWS_REGION: us-east-1
         run: |
           AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}' | awk -F: '{print $NF}')
-          # echo "AMI_ID=$AMI_ID"
-          # echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+          echo "AMI_ID=$AMI_ID"
+          echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
           echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT  # ✅ Set AMI ID as output
           cat $GITHUB_OUTPUT
       - name: Tag AMI
