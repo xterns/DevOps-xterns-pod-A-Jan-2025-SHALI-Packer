@@ -81,12 +81,7 @@ jobs:
   deploy-test:
     needs: build-ami  # ✅ Waits for build-ami to finish
     runs-on: ubuntu-latest
-
-    env:
-        AWS_REGION: us-east-1
-    #env:
-    #  AMI_ID: ${{ needs.build-ami.outputs.ami_id }}
-
+    
     steps:
       - name: Download AMI ID
         uses: actions/download-artifact@v4
@@ -97,24 +92,15 @@ jobs:
         run: |
           AMI_ID=$(cat ami_id.txt)
           echo "AMI ID from artifact: $AMI_ID"
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      # - name: Debug AMI ID in Deploy
-      #   run: |
-      #     echo "AMI ID in deploy-test: $AMI_ID"
-      #     echo "${{ env.AMI_ID }}"
-
-    #  - name: Print AMI ID
-     #   run: |
-      #    echo "AMI ID from build: ${{ needs.build-ami.outputs.ami_id }}"
-
-      - name: Deploy AMI to Test Environment
-        id: deploy
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1
-          AMI_ID: $AMI_ID    # ✅ Use AMI ID from build job
-
+      - name: Test AMI    
         run: |
           AMI_ID=$(cat ami_id.txt)
           if [ -z "$AMI_ID" ]; then
