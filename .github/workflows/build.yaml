@@ -114,6 +114,7 @@ jobs:
           AMI_ID: $AMI_ID    # ✅ Use AMI ID from build job
 
         run: |
+          AMI_ID=$(cat ami_id.txt)
           if [ -z "$AMI_ID" ]; then
             echo "Error: AMI_ID is empty!"
             exit 1
@@ -123,8 +124,8 @@ jobs:
 
       - name: Create EC2 instance with test AMI   
         run: |
-          echo "AMI ID is $AMI_ID"
-          echo "en.AMI_ID"
+          echo "AMI ID is $(cat ami_id.txt)"
+          
       #     INSTANCE_ID=$(aws ec2 run-instances \
       #       --image-id $AMI_ID \
       #       --count 1 \
