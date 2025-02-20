@@ -16,14 +16,4 @@ Install git
 Clone the Repository
 
 ![](img/build%20ami.png)
-![](img/aws%20image.png)
 
-## GitHub Action
-
-You can reference the packer-template file in the github action to automate the process.
-
-![](img/github%20script.png)
-
-2. github action runs once code is merge to main
-
-![](img/github%20action.png)
