@@ -16,4 +16,4 @@ Install git
 Clone the Repository
 
 ![](img/build%20ami.png)
-![](img/aws%20image.png)
+
