@@ -1,0 +1,134 @@
+name: Packer Build AWS AMI
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to main branch
+      - feature*
+
+  pull_request:
+    branches:
+      - main
+      - feature* 
+    types:
+      - closed 
+
+jobs:
+  build-ami:
+    runs-on: ubuntu-latest
+    outputs:
+      ami_id: ${{ steps.capture-ami.outputs.ami_id }}  # ✅ Pass AMI ID as output
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Packer
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+          sudo apt-get update && sudo apt-get install packer -y
+          packer --version
+
+      - name: Initialize Packer
+        run: packer init .
+
+      - name: Validate Packer template
+        run: packer validate .
+
+      - name: Build AMI with Packer
+        id: build
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+        run: |
+          AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}' | awk -F: '{print $NF}')
+          echo "AMI_ID=$AMI_ID"
+          echo "$AMI_ID" > ami_id.txt
+          echo "AMI_ID=$AMI_ID" >> $GITHUB_ENV
+          #echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT  # ✅ Set AMI ID as output
+         # cat $GITHUB_OUTPUT
+
+      - name: Upload AMI ID
+        uses: actions/upload-artifact@v4
+        with:
+          name: ami-id
+          path: ami_id.txt
+
+      - name: Tag AMI
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAG="production"
+          else
+            TAG="testing"
+          fi
+          aws ec2 create-tags --resources "$AMI_ID" --tags Key=Environment,Value=$TAG
+          echo "Tagged AMI $AMI_ID with '$TAG'"
+
+      - name: Debug AMI ID
+        run: |
+          echo "Extracted AMI ID: $AMI_ID"
+          echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT
+
+
+  deploy-test:
+    needs: build-ami  # ✅ Waits for build-ami to finish
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download AMI ID
+        uses: actions/download-artifact@v4
+        with:
+          name: ami-id
+
+      - name: Read AMI ID
+        run: |
+          AMI_ID=$(cat ami_id.txt)
+          echo "AMI ID from artifact: $AMI_ID"
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Test AMI    
+        run: |
+          AMI_ID=$(cat ami_id.txt)
+          if [ -z "$AMI_ID" ]; then
+            echo "Error: AMI_ID is empty!"
+            exit 1
+          fi
+
+          echo "Deploying AMI: env.AMI_ID to test environment"
+
+      - name: Create EC2 instance with test AMI   
+        run: |
+          echo "AMI ID is $(cat ami_id.txt)"
+          
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id $(cat ami_id.txt) \
+            --count 1 \
+            --instance-type t2.micro \
+            --region us-east-1 \
+            --key-name packer \
+            --security-group-ids sg-01e53755fe2685f05 \
+            --subnet-id subnet-0a7f0aad8b71afcbf \
+            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestInstance},{Key=Environment,Value=testing}]' \
+            --query 'Instances[0].InstanceId' --output text)
+            
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          #echo "Deployed Test Instance: $INSTANCE_ID"
+          echo "INSTANCE ID $INSTANCE_ID"     
+          
+
+      - name: Wait for Instance to be Running
+        run: |
+          aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+          echo "Instance $INSTANCE_ID is now running."
