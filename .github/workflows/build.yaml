@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - main  # Trigger on push to main branch
-      - feature-*
+      - feature*
 
   pull_request:
     branches:
       - main
-      - feature-* 
+      - feature* 
     types:
       - closed 
 
@@ -38,10 +38,10 @@ jobs:
 
       - name: Build AMI with Packer
         id: build
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1
+        #env:
+        #  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        #  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        #  AWS_REGION: us-east-1
         run: |
           AMI_ID=$(packer build -machine-readable . | tee output.log | awk -F, '$0 ~/artifact,0,id/ {print $6}' | awk -F: '{print $NF}')
           echo "AMI_ID=$AMI_ID"
