@@ -19,4 +19,33 @@ source "amazon-ebs" "ubuntu" {
 build {
   name = "xtern-amazon-ebs"
   sources = [ "source.amazon-ebs.ubuntu"]
+
+  provisioner "file" {
+    source      = "./scripts/001-critical-standards.sh"
+    destination = "/tmp/001-critical-standards.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sleep 30",
+      "chmod +x /tmp/001-critical-standards.sh",
+      "sudo /tmp/001-critical-standards.sh",
+    ]
+  }
+
+  provisioner "file" {
+    source      = "./scripts/002-critical-standards.sh"
+    destination = "/tmp/002-critical-standards.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "if [ -f /tmp/002-critical-standards.sh ]; then",
+      "  chmod +x /tmp/002-critical-standards.sh",
+      "  sudo /tmp/002-critical-standards.sh || exit 1",
+      "else",
+      "  echo 'Error: /tmp/002-critical-standards.sh not found'; exit 1",
+      "fi"
+    ]
+  }
 }
