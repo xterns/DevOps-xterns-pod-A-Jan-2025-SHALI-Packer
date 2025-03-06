@@ -92,11 +92,76 @@ clean_temp_files() {
   log "Temporary files cleaned."
 }
 
+# Function to configure firewall
+configure_firewall() {
+  echo "configuring firewall..."
+  # Check if the system is Debian-based
+  if [ -f /etc/debian_version ]; then
+    apt install -y ufw
+
+    #define the ufw commands
+    commands=(
+      "ufw default deny incoming"
+      "ufw default allow outgoing"
+      "ufw allow ssh"
+      "ufw allow http"
+      "ufw allow https"
+      "yes | ufw enable"
+    )
+
+    #Execute each UFW command
+    for cmd in "${commands[@]}"; do
+      log "Executing: $cmd"
+      if ! eval $cmd; then
+        log "Error! failed to execute '$cmd'."
+        exit 1
+      fi
+    done
+   
+    # Configure firewall rules for RedHat-based systems using iptables or ufw
+  elif [ -f /etc/redhat-release ]; then
+    yum install -y firewalld
+    
+    #start and enable firewalld
+    systemctl start firewalld 
+    systemctl enable firewalld
+    
+    commands=(
+      "firewall-cmd --set-default-zone=public"
+      "firewall-cmd --permanent --add-service=ssh"
+      "firewall-cmd --permanent --add-service=http"
+      "firewall-cmd --permanent --add-service=https"
+      "firewall-cmd --reload"
+    )
+
+    for cmd in "${commands[@]}"; do
+      log "Executing $cmd"
+      if ! eval "$cmd"; then 
+        log "Error! failed to execute '$cmd'."
+        return 1
+      fi
+    done 
+  fi
+  # Capture the exit code
+  exit_code=$?
+  # Return the exit code
+  return $exit_code
+}
+
 # Main execution
 disable_services
 install_tools_and_update
 setup_log_directory
 secure_ssh
+
+configure_firewall
+# Check the exit code of the previous function
+if [ $? -ne 0 ]; then
+  # Log the error and exit if the function failed
+  echo "Failed to configure firewall. Exiting..."
+  exit 1
+fi
+
 clean_temp_files
 
 log "001-critical-standards.sh completed successfully."
