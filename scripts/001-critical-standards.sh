@@ -148,6 +148,49 @@ configure_firewall() {
   return $exit_code
 }
 
+
+password_length() {
+  log "configuring minimum password length"
+  config_file="/etc/security/pwquality.conf"
+  echo "$config_file"
+  # Check if it is a Debian system
+  if [ -f /etc/debian_version ]; then
+    #check if  libpam-pwquality is installed
+    if dpkg -s libpam-pwquality &>/dev/null; then
+      sed -i 's/^\s*#\?\s*minlen\s*=\s*[0-9]\+/minlen=12/' "$config_file"
+    else
+      apt update && apt install -y libpam-pwquality
+      sed -i 's/^\s*#\?\s*minlen\s*=\s*[0-9]\+/minlen=12/' "$config_file"
+    fi
+    
+   # Check if it is a Red Hat system
+  elif [ -f /etc/redhat-release ]; then
+    # Update the minlen value to 12
+    sed -i 's/^\s*#\?\s*minlen\s*=\s*[0-9]\+/minlen=12/' "$config_file"
+  fi
+  
+  # Capture the exit code
+  exit_code=$?
+  # Return the exit code
+  return $exit_code  
+}
+
+# Function to enforce account lockout policy
+enforce_account_lockout() {
+  # Check if the system is Debian-based
+  if [ -f /etc/debian_version ]; then
+    # Update /etc/pam.d/common-auth to lock accounts after 5 failed attempts
+    echo "auth required pam_tally2.so deny=5 unlock_time=900" >> /etc/pam.d/common-auth
+  elif [ -f /etc/redhat-release ]; then
+    # Update /etc/pam.d/system-auth to lock accounts after 5 failed attempts
+    echo "auth required pam_tally2.so deny=5 unlock_time=900" >> /etc/pam.d/system-auth
+  fi
+  # Capture the exit code
+  exit_code=$?
+  # Return the exit code
+  return $exit_code
+}
+
 # Main execution
 disable_services
 install_tools_and_update
@@ -159,6 +202,22 @@ configure_firewall
 if [ $? -ne 0 ]; then
   # Log the error and exit if the function failed
   echo "Failed to configure firewall. Exiting..."
+  exit 1
+fi
+
+password_length
+# Check the exit code of the previous function
+if [ $? -ne 0 ]; then
+  # Log the error and exit if the function failed
+  echo "Failed to enforce minimum password length. Exiting..."
+  exit 1
+fi
+
+enforce_account_lockout
+# Check the exit code of the previous function
+if [ $? -ne 0 ]; then
+  # Log the error and exit if the function failed
+  echo "Failed to enforce account lockout policy. Exiting..."
   exit 1
 fi
 
