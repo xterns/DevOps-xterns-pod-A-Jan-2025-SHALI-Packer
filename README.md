@@ -7,6 +7,7 @@ This repository contains Packer templates for creating hardened AMI's according 
 
 ## Instructions for Set-Up
 ### Requirements
+1.
 Install Packer Hashicorp
 
 Configure AWS CLI

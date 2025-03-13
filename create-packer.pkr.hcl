@@ -8,8 +8,8 @@ packer {
 }
 
 source "amazon-ebs" "ubuntu" {
-  region = "us-east-1"
-  source_ami = "ami-04b4f1a9cf54c11d0"
+  region         = "eu-north-1"
+  source_ami    = "ami-04b4f1a9cf54c11d0"
   instance_type  = "t2.small"
   ssh_username   = "ubuntu"
   ssh_agent_auth = false
@@ -17,6 +17,20 @@ source "amazon-ebs" "ubuntu" {
 }
 
 build {
-  name = "xtern-amazon-ebs"
-  sources = [ "source.amazon-ebs.ubuntu"]
+  name    = "xtern-amazon-ebs"
+  sources = ["source.amazon-ebs.ubuntu"]
+
+  provisioner "file" {
+    source      = "install_docker.sh"
+    destination = "/tmp/install_docker.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "chmod +x /tmp/install_docker.sh",
+      "/tmp/install_docker.sh"
+    ]
+  }
 }
+
+
